@@ -9,7 +9,7 @@ import time
 
 class THSTrader:
 
-    def __init__(self, exe_path=r"C:\同花顺软件\同花顺\xiadan.exe"): 
+    def __init__(self, exe_path=r"C:\huaxin\dzhwt\bin\winwt.exe"): 
         print("正在连接客户端:", exe_path, "......")
         self.app = pywinauto.Application().connect(path=exe_path, timeout=10)
         print("连接成功!!!")
@@ -44,15 +44,16 @@ class THSTrader:
     def get_balance(self):
         """ 获取资金情况 """
         time.sleep(0.5)
-        self.__select_menu([4])
-        result = {
-            "可用余额": self.main_wnd .window(control_id=0x40E, class_name='Static').window_text()
-        }
-        time.sleep(0.5)
+        #self.__select_menu([7 , 1])
         self.__select_menu([0])
-        self.__select_switch_tab("w")
-        df = self.__get_grid_data(is_records=False)
-        result["股票市值"] = df["市值"].sum()
+        result = {
+            "可用余额": self.main_wnd .window(control_id=0x00000C9F , class_name='Static').window_text()
+        }
+#         time.sleep(0.5)
+#         self.__select_menu([0])
+#         self.__select_switch_tab("w")
+#         df = self.__get_grid_data(is_records=False)
+#         result["股票市值"] = df["市值"].sum()
         return result
     
     def check_trade_finished(self, entrust_no):
@@ -72,8 +73,8 @@ class THSTrader:
     def get_position(self):
         """ 获取持仓 """
         time.sleep(0.5)
-        self.__select_menu([0])
-        self.__select_switch_tab("w")
+        self.__select_menu([7 , 3])
+#        self.__select_switch_tab("w")
         return self.__get_grid_data()
 
     def get_today_entrusts(self):
@@ -118,16 +119,25 @@ class THSTrader:
         """ 获取grid里面的数据 """
         self.__click_update_button()
         time.sleep(0.5)
-        grid = self.main_wnd.window(control_id=0x417, class_name='CVirtualGridCtrl')
-        grid.set_focus()
+        listview = self.main_wnd.window(control_id=0x00000C27, class_name='SysListView32')
+        #listview.set_focus()
         time.sleep(0.5)
-        pywinauto.keyboard.SendKeys('^c')
-        data = clipboard.GetData()
-        df = pd.read_csv(io.StringIO(data), delimiter='\t', na_filter=False)
-        if is_records:
-            return df.to_dict('records')
-        else:
-            return df
+        listhead = listview.child_window(class_name='SysHeader32')
+        headitems = listhead.texts()
+        items=listview.items()
+        for i in range(len(headitems)):
+            print(headitems[i])
+        #item_count=listview.item_count()
+        for i in range(len(items)):
+            print(items[i].text())
+        
+#         pywinauto.keyboard.SendKeys('^c')
+#         data = clipboard.GetData()
+#         df = pd.read_csv(io.StringIO(data), delimiter='\t', na_filter=False)
+#         if is_records:
+#             return df.to_dict('records')
+#         else:
+#             return df
 
     def __select_switch_tab(self, key):
         self.main_wnd.set_focus()
@@ -137,15 +147,15 @@ class THSTrader:
 
     def __select_menu(self, path):
         """ 点击左边菜单 """
-        if r"网上股票" not in self.app.top_window().window_text():
+        if r"大智慧委托" not in self.app.top_window().window_text():
             self.app.top_window().set_focus()
-            pywinauto.keyboard.SendKeys("{ENTER}")  
+            pywinauto.keyboard.SendKeys("{ENTER}")
         self.__get_left_menus_handle().get_item(path).click()
 
     def __get_left_menus_handle(self):
         while True:
             try:
-                handle = self.main_wnd.window(control_id=129, class_name='SysTreeView32')
+                handle = self.main_wnd.window(control_id=3020, class_name='SysTreeView32')
                 handle.wait('ready', 2)  # sometime can't find handle ready, must retry
                 return handle
             except Exception as ex:
@@ -153,7 +163,7 @@ class THSTrader:
                 pass
 
     def __click_update_button(self):
-        self.app.top_window().window(control_id=0x8016, class_name='Button').click()
+        self.app.top_window().window(control_id=0x00000C6B, class_name='Button').click()
 
     def __cancel_by_double_click(self, row):
         """ 通过双击撤单 """
